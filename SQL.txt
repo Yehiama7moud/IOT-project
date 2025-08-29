@@ -1,0 +1,45 @@
+-- Traffic lights table
+create table traffic_lights (
+  id uuid primary key default gen_random_uuid(),
+  status text check (status in ('RED','YELLOW', 'GREEN')) not null,
+  countdown integer not null,
+  updated_at timestamp default now()
+);
+
+-- Gate status table
+create table gate_status (
+  id uuid primary key default gen_random_uuid(),
+  status text check (status in ('OPEN', 'CLOSED')) not null,
+  updated_at timestamp default now()
+);
+
+-- Street lights table
+create table street_lights (
+  id uuid primary key default gen_random_uuid(),
+  status text check (status in ('ON', 'OFF')) not null,
+  updated_at timestamp default now()
+);
+
+-- Violations table (linked to traffic_lights and gate_status)
+create table violations (
+  id uuid primary key default gen_random_uuid(),
+  car_detected boolean not null,
+  night_mode text CHECK (night_mode IN ('ON', 'OFF')),
+  violation_time timestamp default now(),
+);
+
+
+
+
+
+CREATE view  combined_status_view AS
+SELECT
+  gs.updated_at                AS timestamp,
+  gs.status                    AS gate_status,
+  tl.status                    AS traffic_light_status,   -- <-- changed from tl.level
+  sl.status                    AS street_light_status
+FROM gate_status   gs
+JOIN traffic_lights tl
+  ON ABS(EXTRACT(EPOCH FROM gs.updated_at - tl.updated_at)) < 1
+JOIN street_lights sl
+  ON ABS(EXTRACT(EPOCH FROM gs.updated_at - sl.updated_at)) < 1;
